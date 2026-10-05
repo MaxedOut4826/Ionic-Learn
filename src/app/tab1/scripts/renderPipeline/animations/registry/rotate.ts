@@ -4,8 +4,8 @@ import { Animations } from '../animationsManager';
 
 Animations.register('rotate', (object: ObjectInstance) => {
   object.rotate({
-    x: 3 * Renderer.deltaTime,
-    y: 3 * Renderer.deltaTime,
-    z: 3 * Renderer.deltaTime,
+    x: 1 * Renderer.deltaTime,
+    y: 1 * Renderer.deltaTime,
+    z: 0 * Renderer.deltaTime,
   });
 });

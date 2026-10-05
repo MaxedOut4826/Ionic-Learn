@@ -42,6 +42,7 @@ export class Renderer {
   }
 
   private static renderFrame(): void {
+    Renderer.clearScreen();
     Renderer.frameStartTime = Renderer.frameEndTime ?? Renderer.frameStartTime;
     Renderer.frameIteration++;
     Renderer.renderQueue = ObjectInstance.instances;
@@ -61,29 +62,62 @@ export class Renderer {
     Renderer.screen!.stroke();
   }
 
+  public static drawPolygon(...vertices: Vector2[]) {
+    Renderer.screen!.beginPath();
+    Renderer.screen!.moveTo(vertices[0].x, vertices[0].y);
+
+    for (let i = 1; i < vertices.length; ++i) {
+      const { x, y } = vertices[i];
+      Renderer.screen!.lineTo(x, y);
+    }
+
+    Renderer.screen!.closePath();
+    Renderer.screen!.stroke();
+  }
+
   public static renderPolygon(polygon: Polygon): void {
     const { vertices, indices } = polygon;
+    const vertex0 = vertices[indices[0]];
+    
+    if (indices.length > 2) {
+      for (let i = 1; i < indices.length - 1; ++i) {
+        const index1 = indices[i];
+        const index2 = indices[i + 1];
+        const vertex1 = vertices[index1];
+        const vertex2 = vertices[index2];
+        if (vertex1 === undefined || vertex2 === undefined) {
+          continue;
+        }
 
-    for (let i = 0; i < indices.length; i++) {
-      const index0 = indices[i];
-      const index1 = indices[i + 1] ?? indices[0];
-      const vertex0 = vertices[index0];
-      const vertex1 = vertices[index1];
+        const clippedEdge0 = Renderer.screenNearPlaneClip(vertex0, vertex1);
+        if (clippedEdge0 === undefined) {
+          continue;
+        }
 
-      if (vertex0 === undefined || vertex1 === undefined) {
-        continue;
+        const clippedEdge1 = Renderer.screenNearPlaneClip(vertex1, vertex2);
+        if (clippedEdge1 === undefined) {
+          continue;
+        }
+
+        Renderer.drawPolygon(
+          Renderer.screenProject(clippedEdge0[0]),
+          Renderer.screenProject(clippedEdge0[1]),
+          Renderer.screenProject(clippedEdge1[1]),
+        );
       }
-
-      const clippedEdge = Renderer.screenNearPlaneClip(vertex0, vertex1);
-      if (clippedEdge === undefined) {
-        continue;
-      }
-
-      Renderer.drawLine(
-        Renderer.screenProject(clippedEdge[0]),
-        Renderer.screenProject(clippedEdge[1]),
-      );
+      return;
     }
+
+    const vertex1 = vertices[indices[1]];
+    const clippedEdge = Renderer.screenNearPlaneClip(vertex0, vertex1);
+    if (clippedEdge === undefined) {
+      return;
+    }
+
+    Renderer.drawLine(
+      Renderer.screenProject(clippedEdge[0]),
+      Renderer.screenProject(clippedEdge[1]),
+    );
   }
 
   public static renderObject(object: ObjectInstance): void {
